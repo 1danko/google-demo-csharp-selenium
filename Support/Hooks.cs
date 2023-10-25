@@ -15,7 +15,7 @@ namespace QA.GoogleDemo.Support
         private readonly IObjectContainer _objectContainer;
         private IWebDriver _driver;
         public static ConfigSetting config;
-        static string configsettingpath = Directory.GetParent(@"../../../").FullName + Path.DirectorySeparatorChar + "Resources/ExecEnv.json";
+        private static readonly string configsettingpath = Directory.GetParent(@"../../../").FullName + Path.DirectorySeparatorChar + "Resources/ExecEnv.json";
 
         public Hooks(IObjectContainer objectContainer)
         {
@@ -36,9 +36,9 @@ namespace QA.GoogleDemo.Support
         }
 
         [BeforeScenario]
-        public void BeforeScenario(DriverFactory driverFactory, ScenarioInfo info)
+        public void BeforeScenario()
         {
-            _driver = driverFactory.CreateDriver(info.Title);
+            _driver = DriverFactory.CreateDriver();
             _objectContainer.RegisterInstanceAs(_driver);
             _driver.Manage().Window.Maximize();
             _driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(30);

@@ -14,8 +14,8 @@ Scenario Outline: Google Search - Examples
 	Then title of the page is "<title>"
 
 Examples: 
-| searchText | searchResult | title |
-| C#            | C# docs - get started, tutorials, reference.                      | C# docs - get started, tutorials, reference. \| Microsoft Learn                                      |
-| Report Portal | ReportPortal test automation analytics platform and real-time ... | ReportPortal test automation analytics platform and real-time reporting, powered by Machine Learning |
-| Selenium      | Selenium                                                          | Selenium                                                                                             |
+| searchText         | searchResult                                            | title                                         |
+| .net framework 6   | Download .NET 6.0 (Linux, macOS, and Windows) - Dot.net | Download .NET 6.0 (Linux, macOS, and Windows) |
+| allure report docs | Allure Report Docs — Overview                           | Allure Report Docs — Overview                 |
+| Selenium           | Selenium                                                | Selenium                                      |
 

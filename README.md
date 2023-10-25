@@ -77,6 +77,6 @@ All Test data storing in the `Resources` directory that containing various confi
 
 This framework use the Allure report for reporting. To view report, after running the tests run this command:
 ```
-allure generate allure-results && allure open
+allure generate --clean allure-results && allure open
 ```
 
