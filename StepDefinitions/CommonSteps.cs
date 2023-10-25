@@ -1,7 +1,6 @@
 ﻿using OpenQA.Selenium;
 using QA.GoogleDemo.Support;
 
-
 namespace QA.GoogleDemo.StepDefinitions
 {
     [Binding]

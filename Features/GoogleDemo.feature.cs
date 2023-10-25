@@ -91,9 +91,8 @@ namespace QA.GoogleDemo.Features
         [NUnit.Framework.TestAttribute()]
         [NUnit.Framework.DescriptionAttribute("Google Search - Examples")]
         [NUnit.Framework.CategoryAttribute("GoogleTest")]
-        [NUnit.Framework.TestCaseAttribute("C#", "C# docs - get started, tutorials, reference.", "C# docs - get started, tutorials, reference. | Microsoft Learn", null)]
-        [NUnit.Framework.TestCaseAttribute("Report Portal", "ReportPortal test automation analytics platform and real-time ...", "ReportPortal test automation analytics platform and real-time reporting, powered " +
-            "by Machine Learning", null)]
+        [NUnit.Framework.TestCaseAttribute(".net framework 6", "Download .NET 6.0 (Linux, macOS, and Windows) - Dot.net", "Download .NET 6.0 (Linux, macOS, and Windows)", null)]
+        [NUnit.Framework.TestCaseAttribute("allure report docs", "Allure Report Docs — Overview", "Allure Report Docs — Overview", null)]
         [NUnit.Framework.TestCaseAttribute("Selenium", "Selenium", "Selenium", null)]
         public void GoogleSearch_Examples(string searchText, string searchResult, string title, string[] exampleTags)
         {
