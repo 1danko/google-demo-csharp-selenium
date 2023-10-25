@@ -1,0 +1,213 @@
+trigger: none
+
+pool:
+  vmImage: windows-latest
+
+variables:
+  - group: azure-pipeline
+
+steps:
+- task: UseDotNet@2
+  inputs:
+    version: '6.0.x'
+
+- task: DotNetCoreCLI@2
+  displayName: 'dotnet restore'
+  inputs:
+    command: restore
+    projects: "**/*.csproj"
+
+- script: dotnet build
+  displayName: 'dotnet build'
+
+- task: DotNetCoreCLI@2
+  displayName: 'dotnet test'
+  inputs:
+    command: test 
+    arguments: --filter Category=$(Category) --logger "trx;LogFileName=$(Build.SourcesDirectory)/TestResults/testresults.trx" --logger "html;LogFileName=$(Build.SourcesDirectory)/TestResults/livingdoc.html"
+    projects: '**/*.csproj'
+  env:
+    baseUrl: $(baseUrl)
+    ENDPOINT: both
+    ENVIRONMENT: any
+    ReportPortal_Launch_Name: $(Build.DefinitionName)
+
+- task: SpecFlowPlus@0
+  inputs:
+    generatorSource: 'TestAssembly'
+    testAssemblyFilePath: 'bin\Debug\**\QA.GoogleDemo.dll'
+    projectName: 'QA.GoogleDemo'
+    testExecutionJson: 'bin\Debug\**\TestExecution*.json'
+  enabled: true
+  continueOnError: true
+  condition: always()
+  
+- task: CopyFiles@2
+  displayName: 'Copy SpecFlow test results'
+  inputs:
+    sourceFolder: '$(Build.SourcesDirectory)/TestResults'
+    Contents: '**/livingdoc.html'
+    TargetFolder: '$(Build.ArtifactStagingDirectory)'
+  continueOnError: true
+  condition: always()
+      
+- task: PublishPipelineArtifact@1
+  displayName: 'Publish SpecFlow Reports'
+  inputs:
+    targetPath: '$(Build.ArtifactStagingDirectory)'
+    artifact: Reports
+  continueOnError: true
+  condition: always()
+
+- task: PowerShell@2
+  displayName: 'Parse LivingDoc test summary'
+  inputs:
+    targetType: 'inline'
+    script: |
+      $testReportPath = Get-ChildItem -Path '$(Build.ArtifactStagingDirectory)' -Filter 'livingdoc.html' -Recurse -Depth 1 | Select-Object -ExpandProperty FullName
+
+      if (-not (Test-Path $testReportPath)) {
+        Write-Host "LivingDoc test summary report not found."
+        exit 1
+      }
+
+      $htmlContent = Get-Content -Path $testReportPath -Raw
+
+      # Extract the values using regex patterns
+      $totalTests = [regex]::Match($htmlContent, "(?<=Total tests\D+)\d+")
+      $passedTests = [regex]::Match($htmlContent, "(?<=Passed\D+)\d+")
+      $failedTests = [regex]::Match($htmlContent, "(?<=Failed\D+)\d+")
+      $skippedTests = [regex]::Match($htmlContent, "(?<=Skipped\D+)\d+")
+      $passPercentage = [regex]::Match($htmlContent, "(?<=Pass percentage\D+)\d+")
+      $runDuration = [regex]::Match($htmlContent, "(?<=Run duration<\/span><div class=""test-run-time"">)\d+s \d+ms")
+
+
+      # Create the test summary report
+      $testSummary = @"
+      LivingDoc Test Summary:
+      Total Tests: $($totalTests.Value)
+      Passed Tests: $($passedTests.Value)
+      Failed Tests: $($failedTests.Value)
+      Skipped Tests: $($skippedTests.Value)
+      Pass Percentage: $($passPercentage.Value)%
+      Run duration: $($runDuration.Value)
+      "@
+        
+
+      # Set the test summary report as an output variable
+      Write-Host "##vso[task.setvariable variable=LivingDocSummaryReportPayload;isOutput=true]$testSummary"
+       ### YOUR HOST SHOULD BE HERE
+      #   # type - Must be set to `message`.
+      #   # attachments - This is the container for the adaptive card itself.
+      #   # contentType - Must be of the type `application/vnd.microsoft.card.adaptive`.
+      #   # content - The header and content of the adaptive card.
+      #   # $schema - Must have a value of [`http://adaptivecards.io/schemas/adaptive-card.json`](<http://adaptivecards.io/schemas/adaptive-card.json>) to import the proper schema for validation.
+      #   # type - Set to the type of `AdaptiveCard`.
+      #   # version - Currently set to version `1.0`.
+      #   # body - The content of the card itself to display.
+            $JSON = [Ordered]@{
+                "type" = "message"
+                "attachments" = @(
+                    @{
+                        "contentType" = 'application/vnd.microsoft.card.adaptive'
+                        "content" = [Ordered]@{
+                            '$schema' = "http://adaptivecards.io/schemas/adaptive-card.json"
+                            "type" = "AdaptiveCard"
+                            "version" = "1.5"
+                            "body" = @(
+                                [Ordered]@{
+                                    "type" = "Container"
+                                #    "style" = "accent"
+                                    "items" = @(
+                                        @{
+                                            "type" = "TextBlock"
+                                            "text" = "$Env:BUILD_DEFINITIONNAME"
+                                            "style" = "heading"
+                                            "color" = "accent"
+                                            "weight" = "Bolder"
+                                            "size" = "Large"
+                                            "horizontalAlignment" = "Left"
+                                        },
+                                        @{
+                                            "type"    = "ColumnSet"
+                                            "separator" = $true                                            
+                                            "columns" = @(
+                                                @{
+                                                    "type"  = "Column"
+                                                    "style" = "emphasis"
+                                                    "separator" = $true                                                      
+                                                    "width" = "stretch"
+                                                    "items" = @(
+                                                        [Ordered]@{
+                                                            "type" = "FactSet"
+                                                            "facts" = @(
+                                                                @{
+                                                                    "title" = "Passed Tests:"
+                                                                    "value" = "$($passedTests.Value)"
+                                                                },
+                                                                @{
+                                                                    "title" = "Failed Tests:"
+                                                                    "value" = "$($failedTests.Value)"
+                                                                },
+                                                                @{
+                                                                    "title" = "Skipped Tests:"
+                                                                    "value" = "$($skippedTests.Value)"
+                                                                }
+                                                            )
+                                                        }
+                                                    )
+                                                },
+                                                @{
+                                                    "type"  = "Column"
+                                                    "style" = "emphasis"
+                                                    "separator" = $true                                                             
+                                                    "width" = "stretch"
+                                                    "items" = @(
+                                                        [Ordered]@{
+                                                            "type" = "FactSet"
+                                                            "facts" = @(
+                                                                @{
+                                                                    "title" = "Total Tests:"
+                                                                    "value" = "$($totalTests.Value)"
+                                                                },
+                                                                @{
+                                                                    "title" = "Pass Percentage:"
+                                                                    "value" = "$($passPercentage.Value)%"
+                                                                },
+                                                                @{
+                                                                    "title" = "Execution Duration:"
+                                                                    "value" = "$($runDuration.Value)"
+                                                                }
+                                                            )
+                                                        }
+                                                    )
+                                                }
+                                            )
+                                        }
+                                    )
+                                } 
+                            )
+                            "actions" = @(
+                                [Ordered]@{
+                                    "type" = "Action.OpenUrl"
+                                    "title" = "Detail Report"
+                                    "url" = "$(reportPortalUrl)"
+                                }
+                            )                                           
+                        }
+                    }
+                )
+            } | ConvertTo-Json -Depth 20
+
+
+
+        $Params = @{
+            "Uri" = $URI
+            "Method" = 'POST'
+            "Body" = $JSON
+            "ContentType" = 'application/json'
+        }
+
+        Invoke-RestMethod @Params
+  continueOnError: true
+  condition: always()

@@ -1,0 +1,8 @@
+﻿*.vs/
+*bin/
+*obj/
+*TestResults/
+*allure-report/
+*allure-results/
+*selenium-manager/
+allureConfig.Template.json
